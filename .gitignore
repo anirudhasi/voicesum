@@ -100,9 +100,9 @@ Application
 *.pt
 *.pth
 
-/docs
-docs/*
-docs
+# docs/ holds the engineering record (plan, progress, observations) and is
+# tracked deliberately. The previous blanket rules excluded it entirely, so
+# none of it reached the repository.
 runtime
 /runtime
 backend/runtime
