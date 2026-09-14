@@ -2,6 +2,7 @@
 
 | Document | Purpose |
 |---|---|
+| [CHANGE-SUMMARY.md](CHANGE-SUMMARY.md) | Every change since the original codebase in one table: what it was, what it is now, and why. |
 | [PROGRESS.md](PROGRESS.md) | What has actually been built so far, with test counts. Start here. |
 | [WORKSTREAMS.md](WORKSTREAMS.md) | Plain-language guide: what every workstream is for, what you would notice, and its status. |
 | [REVAMP-PLAN.md](REVAMP-PLAN.md) | End-to-end plan to bring the application to production readiness. Every change carries a problem, the change, its rationale, and the measurement that proves it worked. |
