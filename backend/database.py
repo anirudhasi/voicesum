@@ -15,6 +15,8 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy import text
 
 from config import settings
+from config import DEFAULT_OLLAMA_MODEL_PRIORITY as _OLLAMA_PRIORITY_DEFAULT
+from config import SUPERSEDED_OLLAMA_MODEL_PRIORITIES as _SUPERSEDED_PRIORITIES
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +75,74 @@ def _install_sqlite_pragmas(engine_obj) -> None:
                     logger.warning("[DB] Could not apply PRAGMA %s=%s", name, value)
         finally:
             cursor.close()
+
+
+async def _migrate_superseded_user_settings(conn) -> None:
+    """
+    Rewrite per-user settings still holding superseded or prohibited values.
+
+    Changing a default in code does not reach an existing installation: the
+    user_settings table keeps the column defaults it was created with, and
+    registration never wrote these fields, so a new account inherited the old
+    values. The language-model provider then read those values and used them
+    for the whole application.
+
+    Only values that are known superseded defaults, or that name an excluded
+    model, are rewritten. A user's deliberate custom choice is left alone
+    unless it names a prohibited model, in which case the prohibited entries
+    are removed. Idempotent: safe on every start.
+    """
+    from config import settings as _settings
+
+    changes = []
+
+    # 1. Embedding model: Qwen3-Embedding is Alibaba-origin and not shipped.
+    r = await conn.execute(text(
+        "UPDATE user_settings SET embedding_model = :new "
+        "WHERE lower(embedding_model) LIKE 'qwen%'"
+    ), {"new": _settings.EMBEDDING_MODEL})
+    if r.rowcount:
+        changes.append(f"embedding_model -> {_settings.EMBEDDING_MODEL} ({r.rowcount})")
+
+    # 2. Model priority: exact superseded defaults become the current default.
+    for old in _SUPERSEDED_PRIORITIES:
+        r = await conn.execute(text(
+            "UPDATE user_settings SET ollama_model_priority = :new "
+            "WHERE ollama_model_priority = :old"
+        ), {"new": _OLLAMA_PRIORITY_DEFAULT, "old": old})
+        if r.rowcount:
+            changes.append(f"ollama_model_priority default ({r.rowcount})")
+
+    # 2b. Custom priorities: strip prohibited families, keep the rest in order.
+    rows = (await conn.execute(text(
+        "SELECT id, ollama_model_priority FROM user_settings"
+    ))).fetchall()
+    for row_id, priority in rows:
+        entries = [p.strip() for p in (priority or "").split(",") if p.strip()]
+        kept = [p for p in entries if not p.lower().startswith(("qwen", "deepseek"))]
+        if kept != entries:
+            await conn.execute(text(
+                "UPDATE user_settings SET ollama_model_priority = :p WHERE id = :id"
+            ), {"p": ",".join(kept) or _OLLAMA_PRIORITY_DEFAULT, "id": row_id})
+            changes.append(f"ollama_model_priority custom, prohibited removed (id {row_id})")
+
+    # 3. Language model path: the non-Ollama path loads Qwen, which is
+    #    excluded and not shipped, so Ollama is the only working setting.
+    r = await conn.execute(text(
+        "UPDATE user_settings SET use_ollama = 1 WHERE use_ollama = 0"
+    ))
+    if r.rowcount:
+        changes.append(f"use_ollama -> 1 ({r.rowcount})")
+
+    # 4. Chunk size: the old default exceeds a 512-token embedding window.
+    r = await conn.execute(text(
+        "UPDATE user_settings SET rag_chunk_size = :new WHERE rag_chunk_size = 400"
+    ), {"new": _settings.RAG_CHUNK_SIZE})
+    if r.rowcount:
+        changes.append(f"rag_chunk_size 400 -> {_settings.RAG_CHUNK_SIZE} ({r.rowcount})")
+
+    if changes:
+        logger.warning("[DB] Repaired superseded user settings: %s", "; ".join(changes))
 
 
 async def connect_db():
@@ -166,7 +236,7 @@ async def connect_db():
             )
         """))
 
-        await conn.execute(text("""
+        await conn.execute(text(f"""
             CREATE TABLE IF NOT EXISTS user_settings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id TEXT NOT NULL UNIQUE,
@@ -174,10 +244,10 @@ async def connect_db():
                 word_conf_low REAL NOT NULL DEFAULT 0.7,
                 word_conf_mid REAL NOT NULL DEFAULT 0.85,
                 min_segment_duration REAL NOT NULL DEFAULT 1.5,
-                use_ollama INTEGER NOT NULL DEFAULT 0,
+                use_ollama INTEGER NOT NULL DEFAULT 1,
                 ollama_server_url TEXT NOT NULL DEFAULT 'http://localhost:11434',
                 ollama_port INTEGER NOT NULL DEFAULT 11434,
-                ollama_model_priority TEXT NOT NULL DEFAULT 'llama,mistral,gemma,phi,granite',
+                ollama_model_priority TEXT NOT NULL DEFAULT '{_OLLAMA_PRIORITY_DEFAULT}',
                 rag_chunk_size INTEGER NOT NULL DEFAULT 300,
                 rag_chunk_overlap INTEGER NOT NULL DEFAULT 50,
                 rag_retrieval_k_global INTEGER NOT NULL DEFAULT 2,
@@ -447,11 +517,13 @@ async def connect_db():
 
         # ── Migration: add Ollama & RAG columns to user_settings if missing ──
         for col_name, col_type in [
-            ("use_ollama", "INTEGER NOT NULL DEFAULT 0"),
+            # 1: Ollama is the only permitted language-model path. The local
+            # transformers path loads Qwen, which is excluded and not shipped.
+            ("use_ollama", "INTEGER NOT NULL DEFAULT 1"),
             ("ollama_server_url", "TEXT NOT NULL DEFAULT 'http://localhost:11434'"),
             ("ollama_port", "INTEGER NOT NULL DEFAULT 11434"),
-            ("ollama_model_priority", "TEXT NOT NULL DEFAULT 'llama,mistral,gemma,phi,granite'"),
-            ("rag_chunk_size", "INTEGER NOT NULL DEFAULT 400"),
+            ("ollama_model_priority", f"TEXT NOT NULL DEFAULT '{_OLLAMA_PRIORITY_DEFAULT}'"),
+            ("rag_chunk_size", "INTEGER NOT NULL DEFAULT 300"),
             ("rag_chunk_overlap", "INTEGER NOT NULL DEFAULT 50"),
             ("rag_retrieval_k_global", "INTEGER NOT NULL DEFAULT 2"),
             ("rag_retrieval_k_meeting", "INTEGER NOT NULL DEFAULT 3"),
@@ -509,6 +581,10 @@ async def connect_db():
                 await conn.execute(text(f"ALTER TABLE recordings ADD COLUMN {col_def}"))
             except Exception:
                 pass  # column already exists
+
+        # ── Data migration: repair superseded per-user defaults ──────────────
+        # Must run after the user_settings columns above are guaranteed.
+        await _migrate_superseded_user_settings(conn)
 
         # ── Migration: add context_summary caching columns to recordings ─────
         # context_summary       — compressed hierarchical summary used by all AI tasks.

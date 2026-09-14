@@ -17,7 +17,7 @@ from typing import Optional
 from fastapi import APIRouter, Cookie, HTTPException, Depends, Request, Response, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 from sqlalchemy import text
 
 from database import get_db, get_db_context, dt_to_str, str_to_dt
@@ -28,18 +28,51 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 # ── Crypto helpers ─────────────────────────────────────────────
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token", auto_error=False)
 
 REFRESH_COOKIE = "vs_refresh"
 
+# bcrypt only ever uses the first 72 bytes of a password.
+BCRYPT_MAX_BYTES = 72
+BCRYPT_ROUNDS = 12
+
+# Passwords are hashed with the bcrypt library directly rather than through
+# passlib. passlib has been unmaintained since 2020 and breaks against current
+# bcrypt: from bcrypt 5.0 its backend self-test raises "password cannot be
+# longer than 72 bytes" on every hash, and pinning bcrypt back to 3.x to avoid
+# that conflicts with chromadb, which requires bcrypt>=4.0.1. Hashes are the
+# standard $2b$ format either way, so existing accounts verify unchanged.
+
+
+def _password_bytes(password: str) -> bytes:
+    """
+    UTF-8 bytes, truncated to bcrypt's 72-byte limit.
+
+    Truncation reproduces what passlib did silently, so hashes created before
+    this change still verify. New passwords over the limit are refused at
+    registration instead of being silently truncated; see register().
+    """
+    return password.encode("utf-8")[:BCRYPT_MAX_BYTES]
+
+
+def password_too_long(password: str) -> bool:
+    return len(password.encode("utf-8")) > BCRYPT_MAX_BYTES
+
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(
+        _password_bytes(password), bcrypt.gensalt(rounds=BCRYPT_ROUNDS)
+    ).decode("ascii")
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    if not plain or not hashed:
+        return False
+    try:
+        return bcrypt.checkpw(_password_bytes(plain), hashed.encode("ascii"))
+    except (ValueError, TypeError):
+        # A malformed stored hash must deny access, never raise a 500.
+        return False
 
 
 def hash_token(raw: str) -> str:
@@ -433,6 +466,13 @@ async def register(body: UserCreate, request: Request, response: Response):
 
     if len(body.password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters.")
+    if password_too_long(body.password):
+        # bcrypt ignores everything past 72 bytes. Refusing is better than
+        # accepting a password whose tail silently does nothing.
+        raise HTTPException(
+            status_code=400,
+            detail=f"Password must be at most {BCRYPT_MAX_BYTES} bytes.",
+        )
 
     hashed = hash_password(body.password)
     user_id = str(uuid.uuid4())
@@ -458,8 +498,10 @@ async def register(body: UserCreate, request: Request, response: Response):
         await db.execute(
             text("""
                 INSERT INTO user_settings (user_id, speaker_similarity_threshold, word_conf_low,
-                    word_conf_mid, min_segment_duration, updated_at)
-                VALUES (:user_id, :threshold, :low, :mid, :min_dur, :updated_at)
+                    word_conf_mid, min_segment_duration, use_ollama, ollama_model_priority,
+                    embedding_model, rag_chunk_size, updated_at)
+                VALUES (:user_id, :threshold, :low, :mid, :min_dur, :use_ollama, :priority,
+                    :embedding_model, :chunk_size, :updated_at)
             """),
             {
                 "user_id": user_id,
@@ -467,6 +509,14 @@ async def register(body: UserCreate, request: Request, response: Response):
                 "low": settings.WORD_CONF_LOW,
                 "mid": settings.WORD_CONF_MID,
                 "min_dur": settings.MIN_SEGMENT_DURATION,
+                # Written explicitly from current configuration. Left to the
+                # column defaults, a new account on an existing installation
+                # inherited whatever defaults the table was first created with,
+                # which had drifted to superseded and prohibited values.
+                "use_ollama": 1,
+                "priority": settings.OLLAMA_MODEL_PRIORITY,
+                "embedding_model": settings.EMBEDDING_MODEL,
+                "chunk_size": settings.RAG_CHUNK_SIZE,
                 "updated_at": dt_to_str(now),
             },
         )

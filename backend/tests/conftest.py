@@ -11,7 +11,51 @@ The symptom is a test that passes alone and fails in the full suite, which is
 the most expensive kind of failure to diagnose. Resetting the caches between
 tests removes the class rather than chasing instances of it.
 """
+import shutil
+import tempfile
+from pathlib import Path
+
 import pytest
+
+# Set in pytest_configure; removed in pytest_unconfigure.
+_TEST_RUNTIME: Path | None = None
+
+
+def pytest_configure(config):
+    """
+    Point every writable runtime path at a throwaway directory before any test
+    module is imported.
+
+    Without this the suite wrote into the real installation: running the tests
+    created voice profiles named "Alice" and "Bob" and duplicate global-context
+    documents in the user's own database and uploads directory, on every run.
+    Services read `settings` at call time, so redirecting the shared instance
+    here isolates the whole suite. Model directories are left alone: they are
+    read-only and the suite needs them.
+    """
+    global _TEST_RUNTIME
+    _TEST_RUNTIME = Path(tempfile.mkdtemp(prefix="voicesum-tests-"))
+    (_TEST_RUNTIME / "data").mkdir()
+
+    from config import settings
+
+    settings.DATABASE_URL = (
+        f"sqlite+aiosqlite:///{(_TEST_RUNTIME / 'data' / 'voicesum.db').as_posix()}"
+    )
+    settings.UPLOAD_DIR = str(_TEST_RUNTIME / "uploads")
+    settings.CHROMADB_DIR = str(_TEST_RUNTIME / "chromadb")
+    settings.VECTOR_STORE_DIR = str(_TEST_RUNTIME / "vector_store")
+
+
+def pytest_unconfigure(config):
+    if _TEST_RUNTIME is not None:
+        shutil.rmtree(_TEST_RUNTIME, ignore_errors=True)
+
+
+def isolated_runtime_dir() -> Path:
+    """The isolated runtime directory for this test session."""
+    assert _TEST_RUNTIME is not None, "pytest_configure has not run"
+    return _TEST_RUNTIME
 
 
 @pytest.fixture(autouse=True)

@@ -191,6 +191,16 @@ def get_all_variants() -> List[Dict[str, Any]]:
 
 
 
+def _next_variant_number(variants: List[Dict[str, Any]]) -> int:
+    """One more than the highest number found in existing variant labels."""
+    nums = []
+    for v in variants or []:
+        match = re.search(r"(\d+)", str(v.get("label", "")))
+        if match:
+            nums.append(int(match.group(1)))
+    return max(nums, default=0) + 1
+
+
 def get_variant(variant_id: str) -> Optional[Dict[str, Any]]:
     if variant_id == 'default':
         return _DEFAULT_VARIANT
@@ -760,6 +770,12 @@ def _run_stage3_optimizer_thread(
                 parent = get_variant(parent_variant_id)
                 baseline_score = (parent.get('scores', {}) or {}).get('overall', 0.0) if parent else 0.0
                 improvement = round(current_overall - baseline_score, 1)
+
+        # Neither of these was ever defined, so every run that reached this point
+        # raised NameError, was caught below and recorded as failed: Stage 3
+        # optimisation could not complete. Numbering follows Stage 1's scheme.
+        var_id = str(uuid.uuid4())
+        v_num = _next_variant_number(get_all_variants())
 
         new_variant = {
             'variant_id': var_id,

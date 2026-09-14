@@ -208,17 +208,91 @@ def pull_llm() -> bool:
     return True
 
 
-def install_python_deps() -> bool:
+# whisperx 3.8.x declares torch~=2.8.0. requirements.txt cannot pin torch itself
+# because the right wheel depends on the machine: CUDA where an NVIDIA GPU
+# exists, CPU elsewhere. Installing an unpinned torch first (or letting whisperx
+# pull one) produced an environment outside whisperx's supported range.
+TORCH_VERSION = "2.8.0"
+TORCHAUDIO_VERSION = "2.8.0"
+TORCH_CUDA_INDEX = "https://download.pytorch.org/whl/cu128"
+TORCH_CPU_INDEX = "https://download.pytorch.org/whl/cpu"
+
+VENV_DIR = BACKEND / ".venv"
+
+
+def venv_python() -> Path:
+    return VENV_DIR / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+
+
+def has_nvidia_gpu() -> bool:
+    if not shutil.which("nvidia-smi"):
+        return False
+    try:
+        out = subprocess.run(
+            ["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"],
+            capture_output=True, text=True, timeout=15,
+        )
+        return out.returncode == 0 and bool(out.stdout.strip())
+    except Exception:
+        return False
+
+
+def ensure_venv() -> bool:
+    """
+    Create backend/.venv if absent. The application should never run from a
+    system interpreter or a temporary directory: both have broken real
+    installations of this project.
+    """
+    if venv_python().is_file():
+        ok(f"virtual environment present: {VENV_DIR}")
+        return True
+    print(f"  creating {VENV_DIR} ...")
+    r = run([sys.executable, "-m", "venv", str(VENV_DIR)])
+    if r.returncode != 0 or not venv_python().is_file():
+        fail("could not create the virtual environment")
+        return False
+    run([str(venv_python()), "-m", "pip", "install", "--quiet", "--upgrade", "pip"])
+    ok(f"virtual environment created: {VENV_DIR}")
+    return True
+
+
+def install_python_deps(force_cpu: bool = False) -> bool:
     req = BACKEND / "requirements.txt"
     if not req.is_file():
         fail("backend/requirements.txt not found")
         return False
+    if not ensure_venv():
+        return False
+
+    py = str(venv_python())
+    gpu = has_nvidia_gpu() and not force_cpu
+    index = TORCH_CUDA_INDEX if gpu else TORCH_CPU_INDEX
+    print(f"  installing torch {TORCH_VERSION} ({'CUDA' if gpu else 'CPU'}) ...")
+    r = run([py, "-m", "pip", "install",
+             f"torch=={TORCH_VERSION}", f"torchaudio=={TORCHAUDIO_VERSION}",
+             "--index-url", index])
+    if r.returncode != 0:
+        fail("torch install failed; see the output above")
+        return False
+
+    # Constrain the rest of the install to the torch just installed, so no
+    # dependency can swap it for a different build.
+    constraints = VENV_DIR / "constraints.txt"
+    constraints.write_text(
+        f"torch=={TORCH_VERSION}\ntorchaudio=={TORCHAUDIO_VERSION}\n", encoding="utf-8"
+    )
+
     print("  installing backend dependencies ...")
-    r = run([sys.executable, "-m", "pip", "install", "-r", str(req)])
+    r = run([py, "-m", "pip", "install", "-c", str(constraints),
+             "--extra-index-url", index, "-r", str(req)])
     if r.returncode != 0:
         fail("dependency install failed; see the output above")
         return False
-    ok("backend dependencies installed")
+
+    check = run([py, "-m", "pip", "check"], capture_output=True, text=True)
+    if check.returncode != 0:
+        warn("pip check reports conflicts:\n" + (check.stdout or "")[-800:])
+    ok(f"backend dependencies installed ({'CUDA' if gpu else 'CPU'} torch {TORCH_VERSION})")
     return True
 
 
@@ -244,6 +318,12 @@ def install_frontend() -> bool:
 def verify() -> bool:
     step("Verifying install")
     good = True
+
+    if venv_python().is_file():
+        ok(f"virtual environment: {VENV_DIR}")
+    else:
+        fail(f"virtual environment missing: {VENV_DIR}")
+        good = False
 
     missing = models_present()
     if missing:
@@ -277,6 +357,8 @@ def main() -> int:
     parser.add_argument("--check", action="store_true", help="verify only, download nothing")
     parser.add_argument("--skip-llm", action="store_true", help="skip the Ollama model pull")
     parser.add_argument("--skip-frontend", action="store_true", help="skip npm install")
+    parser.add_argument("--cpu", action="store_true", help="install CPU torch even if a GPU is present")
+    parser.add_argument("--skip-deps", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
 
     print("VoiceSum setup")
@@ -291,8 +373,18 @@ def main() -> int:
     check_ffmpeg()
     check_ollama()
 
-    step("Installing Python dependencies")
-    install_python_deps()
+    if not args.skip_deps:
+        step("Installing Python dependencies")
+        if not install_python_deps(force_cpu=args.cpu):
+            return 1
+        # Continue inside the environment just built, so the model downloaders
+        # install their helpers there rather than into the system Python.
+        if Path(sys.executable).resolve() != venv_python().resolve():
+            forwarded = ["--skip-deps"] + [
+                flag for flag, on in (("--skip-llm", args.skip_llm),
+                                      ("--skip-frontend", args.skip_frontend)) if on
+            ]
+            return subprocess.call([str(venv_python()), str(Path(__file__).resolve()), *forwarded])
 
     step("Downloading speech, alignment, diarization and speaker models")
     download_speech_models()
@@ -313,8 +405,9 @@ def main() -> int:
     print("\n" + "=" * 60)
     if good:
         print(f"{GREEN}Setup complete.{RESET}\n")
+        py = r".venv\Scripts\python" if os.name == "nt" else ".venv/bin/python"
         print("Start the backend:")
-        print("  cd backend && python -m uvicorn main:app --host 127.0.0.1 --port 8000")
+        print(f"  cd backend && {py} -m uvicorn main:app --host 127.0.0.1 --port 8000")
         print("\nStart the frontend, in a second terminal:")
         print("  cd frontend && npm run dev")
         print("\nThen open http://localhost:8080/signup")

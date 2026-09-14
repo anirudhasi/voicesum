@@ -1,0 +1,10 @@
+{
+  "must_keep_point_ids": ["p1", "p2", "p3", "p6"],
+  "must_keep_entities": ["FADEC", "18%", "12 March", "20 March", "LRU-4", "2.4 g", "5 April"],
+  "actions": [
+    {"task": "Circulate the FADEC calibration report to the propulsion team", "owner": "Arjun", "source_point_id": "p1"},
+    {"task": "Replace the LRU-4 mounting bracket before the next ground run", "owner": null, "source_point_id": "p3"},
+    {"task": "Book the altitude test chamber for 5 April", "owner": "Meera", "source_point_id": "p6"},
+    {"task": "Book the altitude test chamber for 2 April", "owner": "Kiran", "source_point_id": "p5", "superseded": true}
+  ]
+}

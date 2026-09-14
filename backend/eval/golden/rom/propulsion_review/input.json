@@ -1,0 +1,130 @@
+{
+  "_provenance": "synthetic",
+  "_purpose": "Merge pressure on figures and dates; a filler aside; an unassigned action agreed by two speakers; a commitment reassigned later in the meeting.",
+  "agendas": [
+    {
+      "agenda_id": "A1",
+      "title": "Engine health monitoring",
+      "discussion_points": [
+        {
+          "id": "p1",
+          "polished_text": "Arjun reported that FADEC recalibration on 12 March raised the thrust margin by 18%. Arjun agreed to circulate the calibration report to the propulsion team by 20 March.",
+          "speaker": "Arjun",
+          "speakers": ["Arjun"],
+          "action_owner": "Arjun",
+          "action_items": [{"task": "Circulate the FADEC calibration report to the propulsion team", "assignee": "Arjun", "deadline": "20 March"}],
+          "technical_terms": ["FADEC"],
+          "dates": ["12 March", "20 March"],
+          "numbers": ["18%"],
+          "references": [],
+          "original_point_ids": ["s1-1"],
+          "timeline_start": 0.0,
+          "timeline_end": 140.0,
+          "agenda_confidence": "high"
+        },
+        {
+          "id": "p2",
+          "polished_text": "Meera stated that vibration on LRU-4 exceeded 2.4 g during ground run 7, and the root cause was traced to a loose mounting bracket.",
+          "speaker": "Meera",
+          "speakers": ["Meera"],
+          "action_owner": null,
+          "action_items": [],
+          "technical_terms": ["LRU-4"],
+          "dates": [],
+          "numbers": ["2.4 g", "ground run 7"],
+          "references": [],
+          "original_point_ids": ["s1-2", "s1-3"],
+          "timeline_start": 140.0,
+          "timeline_end": 310.0,
+          "agenda_confidence": "high"
+        },
+        {
+          "id": "p3",
+          "polished_text": "Arjun and Meera agreed that the LRU-4 mounting bracket must be replaced before the next ground run. No one was assigned to carry out the replacement.",
+          "speaker": "Arjun",
+          "speakers": ["Arjun", "Meera"],
+          "action_owner": null,
+          "action_items": [{"task": "Replace the LRU-4 mounting bracket before the next ground run", "assignee": null, "deadline": "before next ground run"}],
+          "technical_terms": ["LRU-4"],
+          "dates": [],
+          "numbers": [],
+          "references": [],
+          "original_point_ids": ["s1-4"],
+          "timeline_start": 310.0,
+          "timeline_end": 400.0,
+          "agenda_confidence": "high"
+        },
+        {
+          "id": "p7",
+          "polished_text": "Arjun noted a fuel flow sensor drift of 0.8% that will be observed over the next 3 runs; no action was decided.",
+          "speaker": "Arjun",
+          "speakers": ["Arjun"],
+          "action_owner": null,
+          "action_items": [],
+          "technical_terms": ["fuel flow sensor"],
+          "dates": [],
+          "numbers": ["0.8%", "3 runs"],
+          "references": [],
+          "original_point_ids": ["s1-9"],
+          "timeline_start": 1100.0,
+          "timeline_end": 1160.0,
+          "agenda_confidence": "medium"
+        }
+      ]
+    },
+    {
+      "agenda_id": "A2",
+      "title": "Test schedule",
+      "discussion_points": [
+        {
+          "id": "p4",
+          "polished_text": "Kiran mentioned that canteen timings will change from next week.",
+          "speaker": "Kiran",
+          "speakers": ["Kiran"],
+          "action_owner": null,
+          "action_items": [],
+          "technical_terms": [],
+          "dates": [],
+          "numbers": [],
+          "references": [],
+          "original_point_ids": ["s1-5"],
+          "timeline_start": 400.0,
+          "timeline_end": 420.0,
+          "agenda_confidence": "probable"
+        },
+        {
+          "id": "p5",
+          "polished_text": "Kiran said he will book the altitude test chamber for 2 April.",
+          "speaker": "Kiran",
+          "speakers": ["Kiran"],
+          "action_owner": "Kiran",
+          "action_items": [{"task": "Book the altitude test chamber for 2 April", "assignee": "Kiran", "deadline": "2 April"}],
+          "technical_terms": ["altitude test chamber"],
+          "dates": ["2 April"],
+          "numbers": [],
+          "references": [],
+          "original_point_ids": ["s1-6"],
+          "timeline_start": 420.0,
+          "timeline_end": 480.0,
+          "agenda_confidence": "high"
+        },
+        {
+          "id": "p6",
+          "polished_text": "Later in the meeting Meera took over the altitude test chamber booking from Kiran, who will be travelling, and moved the booking to 5 April.",
+          "speaker": "Meera",
+          "speakers": ["Meera", "Kiran"],
+          "action_owner": "Meera",
+          "action_items": [{"task": "Book the altitude test chamber for 5 April", "assignee": "Meera", "deadline": "5 April"}],
+          "technical_terms": ["altitude test chamber"],
+          "dates": ["5 April"],
+          "numbers": [],
+          "references": [],
+          "original_point_ids": ["s1-8"],
+          "timeline_start": 980.0,
+          "timeline_end": 1100.0,
+          "agenda_confidence": "high"
+        }
+      ]
+    }
+  ]
+}

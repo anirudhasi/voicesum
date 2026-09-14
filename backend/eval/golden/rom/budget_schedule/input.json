@@ -1,0 +1,108 @@
+{
+  "_provenance": "synthetic",
+  "_purpose": "The same topic revisited with different figures, which condensation tends to merge and lose; a milestone slip with two dates; two explicit owners.",
+  "agendas": [
+    {
+      "agenda_id": "A1",
+      "title": "Programme budget and schedule",
+      "discussion_points": [
+        {
+          "id": "p1",
+          "polished_text": "Anita reported that Q2 spend on composite tooling was 4.2 crore against a budget of 5 crore.",
+          "speaker": "Anita",
+          "speakers": ["Anita"],
+          "action_owner": null,
+          "action_items": [],
+          "technical_terms": ["composite tooling"],
+          "dates": ["Q2"],
+          "numbers": ["4.2 crore", "5 crore"],
+          "references": [],
+          "original_point_ids": ["s1-1"],
+          "timeline_start": 0.0,
+          "timeline_end": 90.0,
+          "agenda_confidence": "high"
+        },
+        {
+          "id": "p2",
+          "polished_text": "Returning to composite tooling, Anita requested an additional 0.6 crore for autoclave repairs.",
+          "speaker": "Anita",
+          "speakers": ["Anita"],
+          "action_owner": null,
+          "action_items": [],
+          "technical_terms": ["composite tooling", "autoclave"],
+          "dates": [],
+          "numbers": ["0.6 crore"],
+          "references": [],
+          "original_point_ids": ["s1-5"],
+          "timeline_start": 600.0,
+          "timeline_end": 680.0,
+          "agenda_confidence": "high"
+        },
+        {
+          "id": "p3",
+          "polished_text": "Vikram announced that the critical design review (CDR) milestone has moved from 30 June to 15 July.",
+          "speaker": "Vikram",
+          "speakers": ["Vikram"],
+          "action_owner": null,
+          "action_items": [],
+          "technical_terms": ["CDR", "critical design review"],
+          "dates": ["30 June", "15 July"],
+          "numbers": [],
+          "references": [],
+          "original_point_ids": ["s1-2"],
+          "timeline_start": 90.0,
+          "timeline_end": 200.0,
+          "agenda_confidence": "high"
+        },
+        {
+          "id": "p4",
+          "polished_text": "Vikram agreed to update the master schedule with the new CDR date by Friday.",
+          "speaker": "Vikram",
+          "speakers": ["Vikram"],
+          "action_owner": "Vikram",
+          "action_items": [{"task": "Update the master schedule with the new CDR date", "assignee": "Vikram", "deadline": "Friday"}],
+          "technical_terms": ["master schedule", "CDR"],
+          "dates": ["Friday"],
+          "numbers": [],
+          "references": [],
+          "original_point_ids": ["s1-3"],
+          "timeline_start": 200.0,
+          "timeline_end": 260.0,
+          "agenda_confidence": "high"
+        },
+        {
+          "id": "p5",
+          "polished_text": "Anita will raise the 0.6 crore supplementary request with finance by 10 June.",
+          "speaker": "Anita",
+          "speakers": ["Anita"],
+          "action_owner": "Anita",
+          "action_items": [{"task": "Raise the 0.6 crore supplementary request with finance", "assignee": "Anita", "deadline": "10 June"}],
+          "technical_terms": [],
+          "dates": ["10 June"],
+          "numbers": ["0.6 crore"],
+          "references": [],
+          "original_point_ids": ["s1-6"],
+          "timeline_start": 680.0,
+          "timeline_end": 740.0,
+          "agenda_confidence": "high"
+        },
+        {
+          "id": "p6",
+          "polished_text": "Vikram mentioned that the coffee machine on the second floor is broken.",
+          "speaker": "Vikram",
+          "speakers": ["Vikram"],
+          "action_owner": null,
+          "action_items": [],
+          "technical_terms": [],
+          "dates": [],
+          "numbers": [],
+          "references": [],
+          "original_point_ids": ["s1-4"],
+          "timeline_start": 260.0,
+          "timeline_end": 280.0,
+          "agenda_confidence": "probable"
+        }
+      ]
+    }
+  ]
+}

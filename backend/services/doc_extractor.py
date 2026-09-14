@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import logging
 import os
+import subprocess
 import re
 import sys
 from typing import Optional

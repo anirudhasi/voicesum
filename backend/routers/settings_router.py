@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
 
+from config import settings
 from database import get_db, get_db_context, dt_to_str
 from routers.auth import get_current_user
 from pydantic import BaseModel
@@ -46,11 +47,12 @@ async def get_settings(current_user: dict = Depends(get_current_user)):
         "word_conf_low": 0.7,
         "word_conf_mid": 0.85,
         "min_segment_duration": 1.5,
-        "use_ollama": False,
+        # Ollama is the only permitted language-model path; see database.py.
+        "use_ollama": True,
         "ollama_server_url": "http://localhost:11434",
         "ollama_port": 11434,
-        "ollama_model_priority": "llama,mistral,gemma,phi,granite",
-        "rag_chunk_size": 400,
+        "ollama_model_priority": settings.OLLAMA_MODEL_PRIORITY,
+        "rag_chunk_size": settings.RAG_CHUNK_SIZE,
         "rag_chunk_overlap": 50,
         "rag_retrieval_k_global": 2,
         "rag_retrieval_k_meeting": 3,
@@ -166,7 +168,7 @@ async def get_settings(current_user: dict = Depends(get_current_user)):
     res["missing_segment_min_duration_sec"] = float(res.get("missing_segment_min_duration_sec") or 2.0)
 
     if res.get("embedding_model"):
-        from config import settings
+        # settings is imported at module level; a local import here shadowed it.
         if settings.EMBEDDING_MODEL != res["embedding_model"]:
             settings.EMBEDDING_MODEL = res["embedding_model"]
             settings.QWEN_EMBEDDING_MODEL_NAME = res["embedding_model"]
@@ -242,7 +244,7 @@ async def update_settings(
     if "embedding_model" in patch and patch["embedding_model"]:
         new_model = str(patch["embedding_model"]).strip()
         if new_model:
-            from config import settings
+            # settings is imported at module level; a local import here shadowed it.
             if settings.EMBEDDING_MODEL != new_model:
                 settings.EMBEDDING_MODEL = new_model
                 settings.QWEN_EMBEDDING_MODEL_NAME = new_model
@@ -304,7 +306,7 @@ async def update_settings(
                     "use_ollama": patch.get("use_ollama", 0),
                     "ollama_server_url": patch.get("ollama_server_url", "http://localhost:11434"),
                     "ollama_port": patch.get("ollama_port", 11434),
-                    "ollama_model_priority": patch.get("ollama_model_priority", "llama,mistral,gemma,phi,granite"),
+                    "ollama_model_priority": patch.get("ollama_model_priority", settings.OLLAMA_MODEL_PRIORITY),
                     "rag_chunk_size": patch.get("rag_chunk_size", 400),
                     "rag_chunk_overlap": patch.get("rag_chunk_overlap", 50),
                     "rag_retrieval_k_global": patch.get("rag_retrieval_k_global", 2),
@@ -433,7 +435,7 @@ async def get_embedding_models(current_user: dict = Depends(get_current_user)):
     List supported text embedding models along with their local installation status.
     """
     from pathlib import Path
-    from config import settings, BASE_DIR, RUNTIME_DIR
+    from config import BASE_DIR, RUNTIME_DIR
 
     # Selectable embedding models.
     #

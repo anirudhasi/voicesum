@@ -1,0 +1,30 @@
+{
+  "name": "voicesum-golden",
+  "version": "0.1.0",
+  "cases": [
+    {
+      "id": "propulsion_review",
+      "kind": "rom",
+      "provenance": "synthetic",
+      "description": "Merge pressure on figures and dates, filler aside, two-speaker unassigned action, reassigned commitment.",
+      "input_file": "rom/propulsion_review/input.json",
+      "reference_file": "rom/propulsion_review/reference.json"
+    },
+    {
+      "id": "avionics_integration",
+      "kind": "rom",
+      "provenance": "synthetic",
+      "description": "Co-owned action, team owner, three-speaker unassigned action, timing figures.",
+      "input_file": "rom/avionics_integration/input.json",
+      "reference_file": "rom/avionics_integration/reference.json"
+    },
+    {
+      "id": "budget_schedule",
+      "kind": "rom",
+      "provenance": "synthetic",
+      "description": "Same topic revisited with different figures, milestone slip with two dates, two explicit owners.",
+      "input_file": "rom/budget_schedule/input.json",
+      "reference_file": "rom/budget_schedule/reference.json"
+    }
+  ]
+}

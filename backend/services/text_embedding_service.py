@@ -23,7 +23,7 @@ import gc
 import logging
 import numpy as np
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 
 logger = logging.getLogger(__name__)
 

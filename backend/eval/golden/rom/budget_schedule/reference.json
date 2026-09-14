@@ -1,0 +1,8 @@
+{
+  "must_keep_point_ids": ["p1", "p2", "p3", "p4", "p5"],
+  "must_keep_entities": ["4.2 crore", "5 crore", "0.6 crore", "30 June", "15 July", "10 June", "CDR"],
+  "actions": [
+    {"task": "Update the master schedule with the new CDR date", "owner": "Vikram", "source_point_id": "p4"},
+    {"task": "Raise the 0.6 crore supplementary request with finance", "owner": "Anita", "source_point_id": "p5"}
+  ]
+}

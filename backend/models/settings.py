@@ -1,3 +1,4 @@
+from config import DEFAULT_OLLAMA_MODEL_PRIORITY
 from pydantic import BaseModel, Field
 from datetime import datetime
 
@@ -12,7 +13,7 @@ class UserSettings(BaseModel):
     use_ollama: bool = False
     ollama_server_url: str = "http://localhost:11434"
     ollama_port: int = Field(default=11434, ge=1, le=65535)
-    ollama_model_priority: str = "llama,mistral,gemma,phi,granite"
+    ollama_model_priority: str = DEFAULT_OLLAMA_MODEL_PRIORITY
     rag_chunk_size: int = Field(default=300, ge=10, le=5000)
     rag_chunk_overlap: int = Field(default=50, ge=0, le=1000)
     rag_retrieval_k_global: int = Field(default=2, ge=0, le=50)

@@ -122,3 +122,18 @@ backend/vector_store/*
 # Per-installation secrets (generated at first run, never committed)
 **/secrets/
 *.key
+
+# Golden dataset: real meeting audio and anything derived from it (references,
+# exported transcripts) is sensitive and stays out of git by default. Only the
+# README files are tracked. Force-add a case deliberately if policy allows.
+backend/eval/golden/audio/*
+!backend/eval/golden/audio/README.md
+backend/eval/golden/system/*
+!backend/eval/golden/system/README.md
+backend/eval/golden/manifest.local.json
+*.wav
+*.mp3
+*.m4a
+*.flac
+*.ogg
+*.webm

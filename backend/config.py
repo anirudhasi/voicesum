@@ -45,6 +45,20 @@ def _resolve_models_dir() -> Path:
 
 DEFAULT_MODELS_DIR = _resolve_models_dir()
 
+# Ollama auto-selection order, matched as substrings against installed model
+# names. Strongest permitted models first, generic families as fallback so a
+# machine with only a small model still works. qwen and deepseek are absent:
+# both are Chinese-origin and excluded for this deployment. This is the single
+# definition; everything else references it.
+DEFAULT_OLLAMA_MODEL_PRIORITY = "phi4,mistral-small,llama3.1,llama,mistral,gemma,phi,granite"
+
+# Superseded defaults that existing installations may still hold. Used by the
+# startup data migration in database.py.
+SUPERSEDED_OLLAMA_MODEL_PRIORITIES = (
+    "gemma,qwen,llama,deepseek,mistral",
+    "llama,mistral,gemma,phi,granite",
+)
+
 # Shipped placeholder. Recognised so it can be refused rather than used.
 PLACEHOLDER_JWT_SECRET = "change-me-in-production-use-long-random-string"
 
@@ -165,11 +179,7 @@ class Settings(BaseSettings):
     # Ollama offline fallback settings
     OLLAMA_SERVER_URL: str = "http://localhost:11434"
     OLLAMA_PORT: int = 11434
-    # Auto-selection order for a locally installed Ollama model.
-    # qwen and deepseek were removed: both are Chinese-origin and are
-    # excluded for this deployment. Order favours long context, which the
-    # ROM prompts need (ollama_num_ctx defaults to 32768).
-    OLLAMA_MODEL_PRIORITY: str = "llama,mistral,gemma,phi,granite"
+    OLLAMA_MODEL_PRIORITY: str = DEFAULT_OLLAMA_MODEL_PRIORITY
 
     # Configurable token threshold for switching to Section-wise MoM Generation
     MOM_CONTEXT_TOKEN_THRESHOLD: int = 3000

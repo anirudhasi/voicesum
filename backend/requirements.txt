@@ -7,7 +7,8 @@ pydantic-settings>=2.3.1
 aiosqlite>=0.19.0
 SQLAlchemy>=2.0.0
 python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
+# passlib removed: unmaintained since 2020 and broken against current bcrypt.
+# routers/auth.py uses bcrypt directly.
 whisperx>=3.8.4
 pandas
 # whisperx pins numpy<2.1; librosa 1.x wants >=2.1. 2.5.x satisfies both.
@@ -22,7 +23,8 @@ pydantic[email]==2.13.4
 # 4.x is required: the community-1 pipeline needs it, and 3.x fails against
 # torchaudio >=2.9 with "module 'torchaudio' has no attribute 'AudioMetaData'".
 pyannote.audio>=4.0
-bcrypt==3.2.2
+# >=4.0.1 is required by chromadb; <6 keeps a known API surface.
+bcrypt>=4.0.1,<6
 # Speaker embedding - SpeechBrain ECAPA-TDNN
 speechbrain>=1.0.0
 # PDF generation

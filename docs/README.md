@@ -3,6 +3,7 @@
 | Document | Purpose |
 |---|---|
 | [PROGRESS.md](PROGRESS.md) | What has actually been built so far, with test counts. Start here. |
+| [WORKSTREAMS.md](WORKSTREAMS.md) | Plain-language guide: what every workstream is for, what you would notice, and its status. |
 | [REVAMP-PLAN.md](REVAMP-PLAN.md) | End-to-end plan to bring the application to production readiness. Every change carries a problem, the change, its rationale, and the measurement that proves it worked. |
 | [IMPLEMENTATION-AND-VALIDATION.md](IMPLEMENTATION-AND-VALIDATION.md) | Execution sequence and validation method. Maps each stated goal to the work that addresses it and the gate that proves it met. Read after the revamp plan. |
 | [OBSERVABILITY-AND-AUDIT.md](OBSERVABILITY-AND-AUDIT.md) | Administrator observability, tamper-evident audit trail of logins and changes, end-to-end content provenance, and the automatic weekly leadership health report. Contains a live security finding on the dashboard router. |

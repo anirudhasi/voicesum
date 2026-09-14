@@ -1306,7 +1306,7 @@ export default function SettingsPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
                   <SettingInput label="Ollama Server URL" val={settings.ollama_server_url ?? 'http://localhost:11434'} onChange={v => setSettings({ ...settings, ollama_server_url: v })} />
                   <SettingCard title="Ollama Port" description="Standard port 11434" value={settings.ollama_port ?? 11434} min={1} max={65535} step={1} onChange={v => setSettings({ ...settings, ollama_port: Math.round(v) })} />
-                  <SettingInput label="Model Priority List (comma-separated)" val={settings.ollama_model_priority ?? 'llama,mistral,gemma,phi,granite'} onChange={v => setSettings({ ...settings, ollama_model_priority: v })} />
+                  <SettingInput label="Model Priority List (comma-separated)" val={settings.ollama_model_priority ?? 'phi4,mistral-small,llama3.1,llama,mistral,gemma,phi,granite'} onChange={v => setSettings({ ...settings, ollama_model_priority: v })} />
                 </div>
 
                 <button onClick={handleTestOllamaConnection} disabled={testingOllama} className="btn btn-secondary" style={{ fontSize: '.78rem', padding: '.45rem 1rem', marginBottom: '1rem' }}>

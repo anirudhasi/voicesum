@@ -458,6 +458,16 @@ def _build_pdf(
 
     story.append(Spacer(1, 2*mm))
 
+    # Participant analytics and the speaker colour map are built here, ahead of
+    # Section 7. Section 7 reads the colours; when they were built in Section 8,
+    # after it, every export of a recording with per-speaker summaries raised
+    # UnboundLocalError and produced no PDF.
+    analytics = _speaker_analytics(segments)
+    speaker_color_map: Dict[str, Any] = {}
+    for idx, row in enumerate(analytics):
+        color_rgb = SPEAKER_COLORS_RGB[idx % len(SPEAKER_COLORS_RGB)]
+        speaker_color_map[row["speaker"]] = Color(*color_rgb)
+
     # ─────────────────────────────────────────────────────────────
     # SECTION 7: PER-SPEAKER SUMMARIES (optional — only when data exists)
     # ─────────────────────────────────────────────────────────────
@@ -508,13 +518,7 @@ def _build_pdf(
     analytics_section_num = "08" if not speaker_summary_data else "08"
     story.append(section_header(analytics_section_num, "Participant Analytics"))
 
-    analytics = _speaker_analytics(segments)
-
-    # Build color map consistent with frontend
-    speaker_color_map: Dict[str, Any] = {}
-    for idx, row in enumerate(analytics):
-        color_rgb = SPEAKER_COLORS_RGB[idx % len(SPEAKER_COLORS_RGB)]
-        speaker_color_map[row["speaker"]] = Color(*color_rgb)
+    # analytics and speaker_color_map are computed before Section 7.
 
     if analytics:
         # Stats table

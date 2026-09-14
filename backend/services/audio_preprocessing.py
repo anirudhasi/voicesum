@@ -33,7 +33,7 @@ import os
 import tempfile
 import numpy as np
 import soundfile as sf
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict, Any
 
 logger = logging.getLogger(__name__)
 

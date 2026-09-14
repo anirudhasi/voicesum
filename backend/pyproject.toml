@@ -1,0 +1,24 @@
+# Tooling configuration for the backend. Dependencies live in requirements.txt
+# and requirements-dev.txt; this file configures tests and lint only.
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = [
+    # Third-party deprecations outside this codebase's control.
+    "ignore::DeprecationWarning:pydantic.*",
+    "ignore::DeprecationWarning:httpx.*",
+]
+
+[tool.ruff]
+target-version = "py310"
+extend-exclude = [".venv", "runtime", "checkpoints"]
+
+[tool.ruff.lint]
+# A ratchet, not a style guide. These rules catch defects that crash at
+# runtime: syntax errors (E9), invalid comparisons (F63), misplaced
+# statements (F7) and undefined or unbound names (F82x). The first run of this
+# gate found sixteen such defects in shipped code, including a Stage 3 training
+# path that could never complete and a PDF export that crashed for recordings
+# with per-speaker summaries. Style rules can be added once this stays clean.
+select = ["E9", "F63", "F7", "F82"]

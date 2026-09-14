@@ -557,8 +557,13 @@ def test_generate_advanced_mom_selective_regeneration(monkeypatch):
         regenerate_conclusion=True,
     )
     assert res_regen_all["title"] == "New Refined Title"
-    assert res_regen_all["introduction"] == "New Refined Intro"
-    assert res_regen_all["conclusion"] == "New Refined Conclusion"
+
+    # The introduction and conclusion pass through a normaliser that caps them
+    # at seven sentences and ensures terminal punctuation, per the "5 to 7
+    # sentences" constraint in the ROM specification. The title is not
+    # normalised, which is why it is compared verbatim above.
+    assert res_regen_all["introduction"] == "New Refined Intro."
+    assert res_regen_all["conclusion"] == "New Refined Conclusion."
 
 
 def test_sequential_multi_speaker_training():

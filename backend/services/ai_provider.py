@@ -22,7 +22,7 @@ import logging
 import re
 import textwrap
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 
 logger = logging.getLogger(__name__)
 
@@ -3184,7 +3184,7 @@ class QwenProvider(AIProvider):
             "use_ollama": getattr(settings, "USE_OLLAMA", True),
             "ollama_server_url": getattr(settings, "OLLAMA_SERVER_URL", "http://localhost:11434"),
             "ollama_port": getattr(settings, "OLLAMA_PORT", 11434),
-            "ollama_model_priority": getattr(settings, "OLLAMA_MODEL_PRIORITY", "llama,mistral,gemma,phi,granite"),
+            "ollama_model_priority": settings.OLLAMA_MODEL_PRIORITY,
             "ollama_num_ctx": 32768,
             "ollama_dynamic_ctx": True,
             "ollama_think": False,

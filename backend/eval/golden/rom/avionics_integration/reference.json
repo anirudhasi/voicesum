@@ -1,0 +1,9 @@
+{
+  "must_keep_point_ids": ["p1", "p2", "p3"],
+  "must_keep_entities": ["ARINC 429", "15 May", "12 ms", "20 ms", "45 s", "30 s"],
+  "actions": [
+    {"task": "Draft the ARINC 429 interface control document", "owner": "Sanjay, Priya", "source_point_id": "p1"},
+    {"task": "Investigate the mission computer boot sequence to meet the 30 s requirement", "owner": "Firmware team", "source_point_id": "p3"},
+    {"task": "Update the out-of-date wiring diagrams", "owner": null, "source_point_id": "p5"}
+  ]
+}
