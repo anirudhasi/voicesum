@@ -3,10 +3,10 @@
 # This must be the very first code that runs. HF hub performs connectivity checks
 # at import time (not just at model-load time), so setting these env vars after
 # any `import transformers / whisperx / pyannote` is already too late.
+# offline_env also disables library telemetry (pyannote.audio sends usage
+# traces by default); see that module.
+import offline_env  # noqa: F401
 import os
-os.environ["TRANSFORMERS_OFFLINE"] = "1"
-os.environ["HF_DATASETS_OFFLINE"] = "1"
-os.environ["HF_HUB_OFFLINE"] = "1"
 # Enable PyTorch expandable segments to avoid VRAM fragmentation and prevent CUDA OOM on long audio files.
 # if "PYTORCH_CUDA_ALLOC_CONF" not in os.environ:
 #     os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"

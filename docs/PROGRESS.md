@@ -351,6 +351,18 @@ was caused by a missing decoding library, so re-recording could never work.
   4 minutes. Tests also work on a copy of the shipped checkpoints.
 - Tests: `tests/test_runtime_paths.py`, additions to `tests/test_offline_egress.py`.
 
+### Speaker-diarization library was sending usage telemetry
+
+Found by running transcription, alignment, diarization and voice embedding on a
+real 14.9 s recording with every non-loopback connection blocked. The pipeline
+produced a correct transcript, but pyannote.audio 4.x made 78 attempts to send
+OpenTelemetry traces to its vendor (otel.pyannote.ai); telemetry is on in its
+default configuration. `backend/offline_env.py` now forces it off, along with
+Hugging Face, ChromaDB and OpenTelemetry opt-outs, before any model library is
+imported. The same run afterwards made zero outbound attempts.
+
+- Tests: telemetry section of `tests/test_offline_egress.py`.
+
 ## Partially complete
 
 ### W4.6 — Offline integrity (functional fixes done, enforcement not)

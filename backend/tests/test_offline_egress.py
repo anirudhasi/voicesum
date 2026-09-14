@@ -6,6 +6,7 @@ parameter audit. They are deliberately source-level where the dependency is
 absent from the light developer environment, so the guarantee is still checked
 on every run rather than only where the full stack is installed.
 """
+import os
 import re
 from pathlib import Path
 
@@ -226,3 +227,44 @@ def test_cdn_backed_api_docs_are_off_by_default():
     paths = {getattr(r, "path", None) for r in app.routes}
     assert "/docs" not in paths and "/redoc" not in paths
     assert "/openapi.json" in paths
+
+
+# ── Library telemetry ──────────────────────────────────────────────────────
+
+def test_offline_environment_is_applied_by_every_entry_point():
+    """
+    pyannote.audio 4.x sends usage traces to otel.pyannote.ai unless told not
+    to, and reads the switch at import time. main.py and services/compat.py
+    (imported before pyannote by the speech services) must both apply it.
+    """
+    import offline_env
+
+    for entry in ("main.py", "services/compat.py"):
+        src = (BACKEND / entry).read_text(encoding="utf-8")
+        assert "import offline_env" in src, f"{entry} does not apply the offline environment"
+        first_ml_import = min(
+            (src.find(m) for m in ("import pyannote", "from pyannote", "import whisperx", "import torch")
+             if src.find(m) != -1),
+            default=len(src),
+        )
+        assert src.index("import offline_env") < first_ml_import, (
+            f"{entry} imports a model library before applying the offline environment"
+        )
+
+
+    for key, value in offline_env.OFFLINE_ENV.items():
+        assert os.environ.get(key) == value
+
+
+def test_offline_environment_overrides_a_stray_setting(monkeypatch):
+    import offline_env
+
+    monkeypatch.setenv("PYANNOTE_METRICS_ENABLED", "true")
+    offline_env.apply()
+    assert os.environ["PYANNOTE_METRICS_ENABLED"] == "false"
+
+
+def test_pyannote_reports_telemetry_disabled():
+    import offline_env  # noqa: F401
+    metrics = pytest.importorskip("pyannote.audio.telemetry.metrics")
+    assert metrics.is_metrics_enabled() is False

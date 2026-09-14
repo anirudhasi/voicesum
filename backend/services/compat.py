@@ -15,6 +15,10 @@ Call ``apply_compatibility_patches()`` as early as possible — typically:
 All functions in this module are idempotent: calling them multiple times is
 safe and cheap.
 """
+# Before pyannote.audio is imported below: it reads its telemetry switch at
+# import time. Covers entry points other than main.py, such as the evaluation
+# runner.
+import offline_env  # noqa: F401
 import logging
 import sys
 import warnings
