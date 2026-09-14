@@ -2,6 +2,7 @@
 
 | Document | Purpose |
 |---|---|
+| [FEATURES.md](FEATURES.md) | Every feature with description, technology and code location; deployment options; pending work. PDF alongside. |
 | [CHANGE-SUMMARY.md](CHANGE-SUMMARY.md) | Every change since the original codebase in one table: what it was, what it is now, and why. |
 | [PROGRESS.md](PROGRESS.md) | What has actually been built so far, with test counts. Start here. |
 | [WORKSTREAMS.md](WORKSTREAMS.md) | Plain-language guide: what every workstream is for, what you would notice, and its status. |

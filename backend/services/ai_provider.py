@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-AI Provider - 100% offline Qwen3 4B Instruct (4-bit quantized).
+AI Provider - 100% offline local language model.
+
+The default path is a local Ollama server on loopback, with models chosen by
+OLLAMA_MODEL_PRIORITY (Phi-4 first). The class keeps its historical name,
+QwenProvider; no Qwen model is selected by default. The in-process
+transformers path below still expects a model in runtime/nlp_engine/ and is
+only used when Ollama is disabled.
 
 Architecture:
   - Single provider: QwenProvider

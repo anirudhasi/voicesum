@@ -1,5 +1,6 @@
 """
-text_embedding_service.py — Offline text embedding using Qwen embedding models.
+text_embedding_service.py — Offline text embedding using a local sentence-embedding model
+(default mxbai-embed-large-v1; pooling read from the model's own configuration).
 
 Architecture
 ------------

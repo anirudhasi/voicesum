@@ -786,7 +786,7 @@ def _run_stage3_optimizer_thread(
             'parent_variant_id': parent_variant_id,
             'created_at': datetime.now(timezone.utc).isoformat(),
             'optimizer': settings.get('optimizer', 'BootstrapFewShot'),
-            'model': settings.get('model_name') or 'local-qwen',
+            'model': settings.get('model_name') or 'local-llm',
             'training_batch_count': len(batches),
             'validation_batch_count': max(1, math.ceil(len(batches) * 0.2)),
             'feedback_count': len(feedback_examples),

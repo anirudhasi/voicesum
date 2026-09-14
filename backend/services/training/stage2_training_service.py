@@ -1318,7 +1318,10 @@ def _run_optimization_worker(
                 pass
 
         if not model_name:
-            model_name = 'qwen2.5:7b'
+            # No model reported by the server: use the configured first choice
+            # rather than a hard-coded model that may be neither installed nor
+            # permitted (this previously named a Qwen model).
+            model_name = _settings.OLLAMA_MODEL_PRIORITY.split(',')[0].strip()
 
         _set_run_status(run_id, 'running', 5, 'Initializing Stage 2 DSPy optimization...')
 
