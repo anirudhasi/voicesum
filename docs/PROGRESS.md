@@ -312,6 +312,45 @@ write transaction is open, and ten concurrent readers during a writer loop.
 
 ---
 
+### Language-model requests can no longer hang forever
+
+Found when the golden evaluation blocked indefinitely on a stalled model
+server. Generation requests had no timeout, despite a comment claiming 90 s.
+
+- Requests now stream. A socket timeout, `OLLAMA_STALL_TIMEOUT_SEC` (default
+  600 s), fires only when the server sends nothing, so long generations are not
+  cut short.
+- A stream that ends without its final chunk is treated as a failure, not
+  returned as a truncated answer. Error and malformed chunks are raised.
+- Tests: `tests/test_ollama_stream.py`.
+
+### Voice enrolment explains failures (W4.3, enrolment only)
+
+The live error "Could not extract embeddings from samples. Please re-record."
+was caused by a missing decoding library, so re-recording could never work.
+
+- Each sample is assessed and classified: empty, too short (under 2 s) or too
+  quiet are the user's to fix (HTTP 422, specific guidance); undecodable audio,
+  a missing model or a failed extraction are internal (HTTP 500, tells the user
+  re-recording will not help, no internal detail leaked).
+- Tests: `tests/test_voice_sample_assessment.py`.
+
+### Offline and isolation defects found by the full test run
+
+- **API docs pages.** FastAPI's `/docs` and `/redoc` load scripts and fonts
+  from public CDNs. They are now off unless `ENABLE_API_DOCS` is set.
+  `/openapi.json` has no external references and stays.
+- **Working-directory paths.** Training checkpoints and the diagnostics export
+  were relative to wherever the process was launched. Checkpoints now follow
+  `CHECKPOINTS_DIR` (default `backend/checkpoints`); the export uses a private
+  temporary file deleted after sending. The export had been committed to the
+  repository with log contents; it is removed and ignored.
+- **Tests reached the live model.** Unmocked requests went to the Ollama server
+  running on the machine, so results depended on that model and the suite took
+  26 minutes. Unmocked network access now fails in tests; the suite takes about
+  4 minutes. Tests also work on a copy of the shipped checkpoints.
+- Tests: `tests/test_runtime_paths.py`, additions to `tests/test_offline_egress.py`.
+
 ## Partially complete
 
 ### W4.6 — Offline integrity (functional fixes done, enforcement not)
@@ -357,6 +396,7 @@ changes, stands regardless.
 
 ## Not started
 
-Everything else, including all of G1, G2 and G3. The golden dataset that gates
-every quality claim has not been commissioned; it needs a domain labeller and
-is the critical path.
+Everything else; see `WORKSTREAMS.md` for the list. The golden-dataset harness
+and three synthetic cases exist (`backend/eval/`), but no real recordings have
+been labelled yet. Real recordings with human-checked references remain the
+critical path for every accuracy claim.

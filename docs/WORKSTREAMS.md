@@ -9,8 +9,8 @@ Status as of 2026-09-14.
 | | Count |
 |---|---|
 | Done | 12 |
-| Partly done | 5 |
-| Not started | 25 |
+| Partly done | 6 |
+| Not started | 24 |
 
 ---
 
@@ -70,7 +70,7 @@ loses the work.
 |---|---|---|
 | W4.1 | **Unique security key per install.** Every copy shipped with the same known key. | **Done** |
 | W4.2 | **Safe file uploads.** Uploaded files are served without per-user access checks and decoded without time limits. | Not started |
-| W4.3 | **Honest error messages.** Failures blame the user (e.g. "please re-record") when the fault is internal. Distinguishes user, temporary and internal errors. | Not started |
+| W4.3 | **Honest error messages.** Failures blame the user (e.g. "please re-record") when the fault is internal. Distinguishes user, temporary and internal errors. | **Partly done**: voice enrolment now says exactly what is wrong (too short, too quiet, or a server fault that re-recording cannot fix). Other endpoints remain. Language-model requests also now fail with an error instead of hanging forever when the model server stalls. |
 | W4.4 | **Automatic testing on every change.** Tests and a crash-defect scan run on every push to GitHub. | **Done** |
 | W4.5 | **Safe offline updates.** Install and update without internet, verifying files, never leaving a half-updated install. | **Partly done**: one-command setup exists; offline update bundles do not. |
 | W4.6 | **Guaranteed no internet use.** Removes external calls and fails the build if one reappears. | **Partly done**: fixes and tests in place; startup enforcement not yet. |
@@ -111,4 +111,4 @@ health summary.
 3. **W6.2, W6.5** — audit log and keeping names out of logs.
 4. **W1.5, W1.6, W1.8** — remaining accuracy fixes, validated against the real
    recordings from step 1.
-5. **W3.1, W4.3** — safe upgrades and honest errors, before wider deployment.
+5. **W3.1, rest of W4.3** — safe upgrades and honest errors, before wider deployment.

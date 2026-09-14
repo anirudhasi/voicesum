@@ -43,6 +43,9 @@ from __future__ import annotations
 
 import logging
 import os
+from dataclasses import dataclass
+from pathlib import Path
+
 import numpy as np
 from typing import List, Optional, Tuple
 
@@ -320,12 +323,107 @@ def extract_embedding(audio: np.ndarray, sr: int = SAMPLE_RATE) -> Optional[np.n
 
 def extract_embedding_from_file(file_path: str) -> Optional[np.ndarray]:
     """Load a file and extract a 192-d ECAPA-TDNN speaker embedding."""
+    return assess_voice_sample(file_path).embedding
+
+
+# ── Voice sample assessment ───────────────────────────────────────────────────
+#
+# Enrolment previously reduced every failure to None, and the router could only
+# answer "Please re-record". That blamed the user for internal faults: when a
+# missing audio-decoding library broke every sample, the instruction to
+# re-record could never succeed. Each outcome now says what went wrong and
+# whether the person recording can fix it.
+
+# Minimum usable sample. Matches the enrolment defaults in models/settings.py.
+MIN_SAMPLE_SEC: float = 2.0
+MIN_SAMPLE_RMS: float = 0.003
+
+
+@dataclass(frozen=True)
+class SampleOutcome:
+    embedding: Optional[np.ndarray]
+    problem: Optional[str]            # None on success
+    user_correctable: bool            # can re-recording fix it?
+    message: str                      # safe to show to the user
+    duration_sec: Optional[float] = None
+
+    @property
+    def ok(self) -> bool:
+        return self.embedding is not None
+
+
+def assess_voice_sample(file_path: str) -> SampleOutcome:
+    """
+    Extract an embedding from a voice sample, classifying any failure.
+
+    Problems a person can fix by recording again (too short, too quiet, an
+    empty upload) are reported as such. Problems they cannot fix (a model that
+    will not load, audio the server cannot decode, a failed extraction) are
+    reported as internal, with the detail logged rather than shown.
+    """
+    path = Path(file_path) if file_path else None
+    if path is None or not path.is_file():
+        logger.error("[Embedding] voice sample not found: %s", file_path)
+        return SampleOutcome(None, "missing", False,
+                             "The uploaded sample could not be found on the server.")
+
+    if path.stat().st_size == 0:
+        return SampleOutcome(None, "empty", True,
+                             "The recording was empty. Please record again.")
+
     try:
-        audio, sr = _load_audio(file_path, target_sr=SAMPLE_RATE)
-        return extract_embedding(audio, sr=sr)
-    except Exception as e:
-        logger.error(f"[Embedding] extract_embedding_from_file failed: {e}")
-        return None
+        audio, sr = _load_audio(str(path), target_sr=SAMPLE_RATE)
+    except Exception as exc:
+        # A non-empty upload from the application's own recorder is a valid
+        # file; failing to decode it points at the server, not the speaker.
+        logger.error("[Embedding] could not decode voice sample %s: %s", path, exc)
+        return SampleOutcome(None, "decode_failed", False,
+                             "The server could not read the audio. This is an internal "
+                             "problem; re-recording will not help. Please contact your administrator.")
+
+    duration = len(audio) / float(sr) if sr else 0.0
+    if duration < MIN_SAMPLE_SEC:
+        return SampleOutcome(None, "too_short", True,
+                             f"The sample was {duration:.1f} s long. Please record at least "
+                             f"{MIN_SAMPLE_SEC:.0f} seconds of speech.", duration)
+
+    rms = float(np.sqrt(np.mean(np.square(audio)))) if len(audio) else 0.0
+    if rms < MIN_SAMPLE_RMS:
+        return SampleOutcome(None, "too_quiet", True,
+                             "The sample was too quiet to identify a voice. Please move closer "
+                             "to the microphone and record again.", duration)
+
+    try:
+        get_encoder()
+    except Exception as exc:
+        logger.error("[Embedding] speaker model unavailable: %s", exc)
+        return SampleOutcome(None, "model_unavailable", False,
+                             "The speaker identification model is not available. This is an "
+                             "internal problem; please contact your administrator.", duration)
+
+    embedding = extract_embedding(audio, sr=sr)
+    if embedding is None:
+        return SampleOutcome(None, "embedding_failed", False,
+                             "A voice profile could not be created from this sample due to an "
+                             "internal error. Please contact your administrator.", duration)
+
+    return SampleOutcome(embedding, None, False, "ok", duration)
+
+
+def summarise_sample_failures(outcomes: List[SampleOutcome]) -> Tuple[int, str]:
+    """
+    Pick the HTTP status and message for a set of samples that all failed.
+
+    Internal problems take precedence: if any failure is internal, telling the
+    user to re-record would send them round a loop that cannot succeed.
+    """
+    internal = [o for o in outcomes if not o.ok and not o.user_correctable]
+    if internal:
+        return 500, internal[0].message
+    correctable = [o for o in outcomes if not o.ok]
+    if correctable:
+        return 422, correctable[0].message
+    return 422, "No usable voice samples were provided."
 
 
 # ── VAD-gated embedding helpers ───────────────────────────────────────────────

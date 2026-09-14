@@ -27,7 +27,9 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 # Base directory for Stage 3 artifacts
-STAGE3_BASE = Path('checkpoints') / 'stage3'
+from config import settings as _settings  # noqa: E402
+
+STAGE3_BASE = Path(_settings.CHECKPOINTS_DIR) / 'stage3'
 STAGE3_VARIANTS_FILE = STAGE3_BASE / 'variants.json'
 STAGE3_HISTORY_FILE = STAGE3_BASE / 'history.json'
 STAGE3_SETTINGS_FILE = STAGE3_BASE / 'settings.json'

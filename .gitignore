@@ -137,3 +137,6 @@ backend/eval/golden/manifest.local.json
 *.flac
 *.ogg
 *.webm
+
+# Diagnostics exports contain recent logs
+voicesum_diagnostics*.json

@@ -179,6 +179,18 @@ class Settings(BaseSettings):
     # Ollama offline fallback settings
     OLLAMA_SERVER_URL: str = "http://localhost:11434"
     OLLAMA_PORT: int = 11434
+    # Seconds without any data from the model server before a request is
+    # abandoned. Covers model loading and prompt evaluation, which send
+    # nothing, so it is generous by default; on a GPU both take seconds.
+    OLLAMA_STALL_TIMEOUT_SEC: float = 600.0
+    # FastAPI's interactive /docs and /redoc pages load their scripts, styles
+    # and fonts from public CDNs, so opening them on an offline install makes
+    # outbound requests and renders blank. Off unless a developer asks.
+    ENABLE_API_DOCS: bool = False
+    # Prompt-optimisation state for training stages 1-3. Was a path relative
+    # to the process working directory, so an app launched from anywhere but
+    # backend/ silently read and wrote a different, empty location.
+    CHECKPOINTS_DIR: str = str(BASE_DIR / "checkpoints")
     OLLAMA_MODEL_PRIORITY: str = DEFAULT_OLLAMA_MODEL_PRIORITY
 
     # Configurable token threshold for switching to Section-wise MoM Generation

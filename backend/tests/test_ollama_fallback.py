@@ -72,6 +72,7 @@ def test_ollama_success_running_model():
                 })
             elif "/api/chat" in url:
                 return MockResponse({
+                    "done": True,
                     "message": {"role": "assistant", "content": "Ollama Response"}
                 })
             return MockResponse({}, status=404)
@@ -126,6 +127,7 @@ def test_ollama_success_installed_model():
                 })
             elif "/api/chat" in url:
                 return MockResponse({
+                    "done": True,
                     "message": {"role": "assistant", "content": "Ollama Installed Response"}
                 })
             return MockResponse({}, status=404)
@@ -242,6 +244,7 @@ def test_custom_ollama_server_url():
                 })
             elif "/api/chat" in url:
                 return MockResponse({
+                    "done": True,
                     "message": {"role": "assistant", "content": "Remote Ollama Response"}
                 })
             return MockResponse({}, status=404)
@@ -290,6 +293,7 @@ def test_generate_mom_bypasses_local_pipeline_load():
                 })
             elif "/api/chat" in url:
                 return MockResponse({
+                    "done": True,
                     "message": {
                         "role": "assistant",
                         "content": '{"title": "MOM Title", "points_discussed": ["topic 1"], "action_items": [], "introduction": "intro", "conclusion": "outro"}'
@@ -351,12 +355,12 @@ def test_ollama_dynamic_ctx_toggle():
 
     captured_options = {}
 
-    def mock_urlopen(req):
+    def mock_urlopen(req, timeout=None):
         import json
         payload = json.loads(req.data.decode("utf-8"))
         nonlocal captured_options
         captured_options = payload.get("options", {})
-        return MockResponse({"message": {"role": "assistant", "content": "Test response"}})
+        return MockResponse({"done": True, "message": {"role": "assistant", "content": "Test response"}})
 
     # 1. When dynamic context is ON (default)
     with patch.object(QwenProvider, "_get_active_settings", return_value={

@@ -363,11 +363,17 @@ Third paragraph sentence seven. Third paragraph sentence eight. Third paragraph 
     assert sentences[0] == "First paragraph sentence one."
     assert sentences[6] == "Third paragraph sentence seven."
 
-    # Test 2: Fallback in generate_mom_overview produces single paragraph with 5-7 sentences
-    overview = rom_srv.generate_mom_overview(
-        ["Discussion point 1", "Discussion point 2"],
-        {"filename": "Test Recording", "created_at": "2026-10-01", "speakers_detected": ["Alice", "Bob"]}
-    )
+    # Test 2: Fallback in generate_mom_overview produces single paragraph with 5-7 sentences.
+    # The provider is stubbed to fail: without it the test reached whatever
+    # model server was running on the machine, and passed or failed on that
+    # model's phrasing rather than on the fallback it is meant to check.
+    unavailable = MagicMock()
+    unavailable.query.side_effect = RuntimeError("model server unavailable")
+    with patch("services.ai_provider.get_provider", return_value=unavailable):
+        overview = rom_srv.generate_mom_overview(
+            ["Discussion point 1", "Discussion point 2"],
+            {"filename": "Test Recording", "created_at": "2026-10-01", "speakers_detected": ["Alice", "Bob"]}
+        )
     intro = overview["introduction"]
     conclusion = overview["conclusion"]
 

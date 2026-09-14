@@ -46,6 +46,15 @@ def pytest_configure(config):
     settings.CHROMADB_DIR = str(_TEST_RUNTIME / "chromadb")
     settings.VECTOR_STORE_DIR = str(_TEST_RUNTIME / "vector_store")
 
+    # Training checkpoints ship with the repository as defaults, and tests
+    # activate and create variants. Work on a copy so the tracked files are
+    # never modified by a test run.
+    shipped = Path(settings.CHECKPOINTS_DIR)
+    checkpoints = _TEST_RUNTIME / "checkpoints"
+    if shipped.is_dir():
+        shutil.copytree(shipped, checkpoints)
+    settings.CHECKPOINTS_DIR = str(checkpoints)
+
 
 def pytest_unconfigure(config):
     if _TEST_RUNTIME is not None:
@@ -74,6 +83,27 @@ def reset_service_singletons():
     _clear()
     yield
     _clear()
+
+
+@pytest.fixture(autouse=True)
+def block_unmocked_network(monkeypatch):
+    """
+    Fail any outbound request a test has not mocked.
+
+    Without this, code paths that call the language model reached whatever
+    Ollama server happened to be running on the developer's machine. Tests then
+    passed or failed on that model's output, and the full suite took minutes
+    longer while it generated. A test that mocks urlopen replaces this guard
+    for its own duration, so explicit mocks keep working.
+    """
+    import urllib.error
+    import urllib.request
+
+    def refuse(req, *args, **kwargs):
+        url = getattr(req, "full_url", req)
+        raise urllib.error.URLError(f"network access blocked in tests: {url}")
+
+    monkeypatch.setattr(urllib.request, "urlopen", refuse)
 
 
 def _clear() -> None:

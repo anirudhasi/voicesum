@@ -2748,6 +2748,51 @@ def _get_prompt(key: str) -> str:
     return resolved
 
 
+class OllamaStreamError(RuntimeError):
+    """Raised when an Ollama response stream is malformed, errors, or is cut off."""
+
+
+def read_ollama_stream(response) -> tuple:
+    """
+    Read a streamed /api/chat response into (content, final_chunk).
+
+    Ollama streams newline-delimited JSON. Each chunk carries a fragment of
+    message.content; the final chunk has done=true and the timing and token
+    statistics. A stream that ends without that final chunk was cut off, for
+    example by the server being killed mid-generation, and is raised rather
+    than returned: accepting it would hand back a truncated answer as complete.
+    """
+    import json as _json
+
+    if hasattr(response, "readline"):
+        lines = iter(response.readline, b"")
+    else:
+        body = response.read()
+        lines = body.splitlines() if isinstance(body, (bytes, bytearray)) else str(body).splitlines()
+
+    parts = []
+    for raw in lines:
+        line = raw.decode("utf-8") if isinstance(raw, (bytes, bytearray)) else str(raw)
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            chunk = _json.loads(line)
+        except ValueError as exc:
+            raise OllamaStreamError(f"malformed chunk from model server: {line[:120]!r}") from exc
+        if chunk.get("error"):
+            raise OllamaStreamError(f"model server error: {chunk['error']}")
+        piece = (chunk.get("message") or {}).get("content")
+        if piece:
+            parts.append(piece)
+        if chunk.get("done"):
+            return "".join(parts), chunk
+
+    raise OllamaStreamError(
+        "model server stream ended before completion; the response was truncated"
+    )
+
+
 def _format_transcript(transcript: List[Dict]) -> str:
     """Convert transcript segments into readable dialogue string (Speaker: text)."""
     lines = []
@@ -3410,7 +3455,8 @@ class QwenProvider(AIProvider):
             ],
             "options": options,
             "think": think_enabled,
-            "stream": False
+            # Streamed so a stalled server is detected; see read_ollama_stream.
+            "stream": True
         }
         if cfg["ollama_keep_alive"] is not None:
             try:
@@ -3442,16 +3488,20 @@ class QwenProvider(AIProvider):
                 data=json.dumps(payload).encode('utf-8'),
                 headers={"Content-Type": "application/json"}
             )
-            # Timeout set to 90 seconds for long generation tasks
-            with urllib.request.urlopen(req) as response:
+            # The request streams, and the socket timeout acts as a stall
+            # detector rather than a cap on total generation time. Previously
+            # there was no timeout at all (despite a comment claiming 90 s): a
+            # model server that stalled or was killed mid-generation blocked
+            # the whole pipeline indefinitely with no error.
+            from config import settings as _settings
+            stall_timeout = float(getattr(_settings, "OLLAMA_STALL_TIMEOUT_SEC", 600.0))
+
+            with urllib.request.urlopen(req, timeout=stall_timeout) as response:
                 status_code = response.status
-                raw_body = response.read().decode('utf-8')
-                logger.debug(f"[QwenAI] Raw Ollama response: {raw_body}")
 
                 if status_code == 200:
-                    resp_data = json.loads(raw_body)
-                    content = resp_data.get("message", {}).get("content", "")
-                    
+                    content, resp_data = read_ollama_stream(response)
+
                     total_dur = resp_data.get("total_duration")
                     load_dur = resp_data.get("load_duration")
                     prompt_eval_dur = resp_data.get("prompt_eval_duration")

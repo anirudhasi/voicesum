@@ -74,7 +74,10 @@ def test_chroma_settings_accepts_the_flag():
 
 def test_backend_has_no_forbidden_hosts():
     offenders = []
-    for p in _sources(BACKEND, {".py"}, skip_parts=("tests", "runtime", "checkpoints")):
+    # Third-party packages are out of scope here: the virtual environment
+    # lives inside backend/ and is not application source.
+    skip_parts = ("tests", "runtime", "checkpoints", ".venv", "venv", "site-packages")
+    for p in _sources(BACKEND, {".py"}, skip_parts=skip_parts):
         text = p.read_text(encoding="utf-8", errors="ignore")
         for host in FORBIDDEN_HOSTS:
             if host in text:
@@ -206,3 +209,20 @@ def test_dashboard_console_uses_system_fonts():
         assert family not in src, (
             f"dashboard still references {family}; it has no font mount"
         )
+
+
+# ── Interactive API docs pull from public CDNs ─────────────────────────────
+
+def test_cdn_backed_api_docs_are_off_by_default():
+    """
+    /docs and /redoc load Swagger UI and ReDoc from cdn.jsdelivr.net and fonts
+    from fonts.googleapis.com. The machine-readable schema has no external
+    references and stays available.
+    """
+    from config import settings
+    from main import app
+
+    assert settings.ENABLE_API_DOCS is False
+    paths = {getattr(r, "path", None) for r in app.routes}
+    assert "/docs" not in paths and "/redoc" not in paths
+    assert "/openapi.json" in paths

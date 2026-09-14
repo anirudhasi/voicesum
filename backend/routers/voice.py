@@ -12,7 +12,11 @@ from database import get_db, get_db_context, dt_to_str, to_json, from_json
 from routers.auth import get_current_user
 from utils.storage import save_upload, delete_file
 from utils.audio_utils import validate_audio, convert_to_wav
-from services.embedding import extract_embedding_from_file
+from services.embedding import (
+    assess_voice_sample,
+    extract_embedding_from_file,
+    summarise_sample_failures,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/voice", tags=["voice"])
@@ -87,14 +91,14 @@ async def finalize_setup(
     if not file_paths:
         raise HTTPException(status_code=400, detail="No voice sample files provided.")
 
-    embeddings = []
-    for fp in file_paths:
-        emb = extract_embedding_from_file(fp)
-        if emb is not None:
-            embeddings.append(emb.tolist())
+    outcomes = [assess_voice_sample(fp) for fp in file_paths]
+    embeddings = [o.embedding.tolist() for o in outcomes if o.ok]
 
     if not embeddings:
-        raise HTTPException(status_code=422, detail="Could not extract embeddings from samples. Please re-record.")
+        # Say what went wrong. "Please re-record" was returned for internal
+        # faults too, which no amount of re-recording could fix.
+        status_code, detail = summarise_sample_failures(outcomes)
+        raise HTTPException(status_code=status_code, detail=detail)
 
     now = datetime.now(timezone.utc)
     profile_id = str(uuid.uuid4())
@@ -164,14 +168,14 @@ async def add_voice_profile(
     if not file_paths:
         raise HTTPException(status_code=400, detail="No file paths provided.")
 
-    embeddings = []
-    for fp in file_paths:
-        emb = extract_embedding_from_file(fp)
-        if emb is not None:
-            embeddings.append(emb.tolist())
+    outcomes = [assess_voice_sample(fp) for fp in file_paths]
+    embeddings = [o.embedding.tolist() for o in outcomes if o.ok]
 
     if not embeddings:
-        raise HTTPException(status_code=422, detail="Could not extract embeddings. Please re-record with clearer audio.")
+        # Say what went wrong. "Please re-record" was returned for internal
+        # faults too, which no amount of re-recording could fix.
+        status_code, detail = summarise_sample_failures(outcomes)
+        raise HTTPException(status_code=status_code, detail=detail)
 
     now = datetime.now(timezone.utc)
     profile_id = str(uuid.uuid4())

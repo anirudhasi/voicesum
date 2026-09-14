@@ -1843,15 +1843,22 @@ async def export_diagnostics():
         "recent_logs": logs
     }
     
-    # Write to a temp file in runtime/
-    export_path = Path("voicesum_diagnostics.json")
-    with open(export_path, "w", encoding="utf-8") as f:
+    # A private temporary file, removed once sent. Previously this wrote
+    # voicesum_diagnostics.json into the process working directory: concurrent
+    # exports overwrote each other and the file, which contains recent logs,
+    # was left behind.
+    import tempfile
+    from starlette.background import BackgroundTask
+
+    fd, export_path = tempfile.mkstemp(prefix="voicesum-diagnostics-", suffix=".json")
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
         json.dump(diagnostic_info, f, indent=2)
-        
+
     return FileResponse(
-        path=str(export_path),
+        path=export_path,
         media_type="application/json",
-        filename="voicesum_diagnostics.json"
+        filename="voicesum_diagnostics.json",
+        background=BackgroundTask(os.remove, export_path),
     )
 
 

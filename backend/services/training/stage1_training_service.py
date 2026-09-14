@@ -19,7 +19,9 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 # Base directory for Stage 1 artifacts
-STAGE1_BASE = Path('checkpoints') / 'stage1'
+from config import settings as _settings  # noqa: E402
+
+STAGE1_BASE = Path(_settings.CHECKPOINTS_DIR) / 'stage1'
 STAGE1_VARIANTS_FILE = STAGE1_BASE / 'variants.json'
 STAGE1_HISTORY_FILE = STAGE1_BASE / 'history.json'
 STAGE1_SETTINGS_FILE = STAGE1_BASE / 'settings.json'

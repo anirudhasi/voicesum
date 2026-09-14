@@ -266,6 +266,8 @@ app = FastAPI(
     description="Voice Conversation Summarization with Speaker Identification",
     version="1.0.0",
     lifespan=lifespan,
+    docs_url="/docs" if settings.ENABLE_API_DOCS else None,
+    redoc_url="/redoc" if settings.ENABLE_API_DOCS else None,
 )
 
 
